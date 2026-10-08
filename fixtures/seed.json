@@ -1,0 +1,17 @@
+{
+  "customers": [
+    {"id": "cus_alice", "email": "alice@example.com", "name": "Alice Nguyen"},
+    {"id": "cus_bob", "email": "bob@example.com", "name": "Bob Martinez"},
+    {"id": "cus_carol", "email": "carol@example.com", "name": "Carol Schmidt"}
+  ],
+  "orders": [
+    {"id": "ORD-1001", "customer_id": "cus_alice", "item": "Wireless headphones", "total": "49.99", "status": "delivered", "delivered_days_ago": 4},
+    {"id": "ORD-1002", "customer_id": "cus_alice", "item": "Espresso machine", "total": "349.00", "status": "delivered", "delivered_days_ago": 6},
+    {"id": "ORD-1003", "customer_id": "cus_alice", "item": "Desk lamp", "total": "38.00", "status": "delivered", "delivered_days_ago": 75},
+    {"id": "ORD-2001", "customer_id": "cus_bob", "item": "Running shoes", "total": "89.00", "status": "shipped", "shipped_days_ago": 14},
+    {"id": "ORD-2002", "customer_id": "cus_bob", "item": "Water bottle", "total": "24.50", "charged": "49.00", "status": "delivered", "delivered_days_ago": 3},
+    {"id": "ORD-2003", "customer_id": "cus_bob", "item": "Backpack", "total": "72.00", "status": "shipped", "shipped_days_ago": 2},
+    {"id": "ORD-3001", "customer_id": "cus_carol", "item": "Laptop", "total": "1499.00", "status": "delivered", "delivered_days_ago": 2},
+    {"id": "ORD-3002", "customer_id": "cus_carol", "item": "USB-C cable", "total": "12.99", "status": "cancelled"}
+  ]
+}

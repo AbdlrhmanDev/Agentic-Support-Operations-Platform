@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: support
+      POSTGRES_PASSWORD: support
+      POSTGRES_DB: support_ops
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U support -d support_ops"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://support:support@postgres:5432/support_ops
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-6.1-sol}
+      LLM_LIGHT_MODEL: ${LLM_LIGHT_MODEL:-}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hashing}
+      API_KEY: ${API_KEY:-}
+      REVIEWER_KEYS: ${REVIEWER_KEYS:-}
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:

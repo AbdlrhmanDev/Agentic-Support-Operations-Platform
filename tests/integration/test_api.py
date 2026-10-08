@@ -94,7 +94,7 @@ async def test_run_pauses_for_approval_and_resumes_over_http(api: Api) -> None:
     trace = (await api.client.get(f"/traces/{run['run_id']}")).json()
     kinds = [event["kind"] for event in trace["events"]]
     assert {"llm_call", "tool_call", "guard", "approval"} <= set(kinds)
-    assert trace["prompt_version"] == "support_agent_v1"
+    assert trace["prompt_version"] == "support_agent_v2"
     names = [event["name"] for event in trace["events"] if event["kind"] == "approval"]
     assert names == ["approval_requested", "approval_approved"]
     assert api.seeded.customer_email not in str(trace), "emails must be masked in traces"

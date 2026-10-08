@@ -213,9 +213,7 @@ def _damaged_items() -> list[Scenario]:
             refund(
                 "{order:o} is defective, it won't switch on. I'd like my money back.", "99.00", 15
             ),
-            refund(
-                "The screen on my order {order:o} was shattered on arrival. Refund it.", "85.40", 9
-            ),
+            refund("My order {order:o} was shattered on arrival. Refund it.", "85.40", 9),
             refund(
                 "Got {order:o} today and it's dented and unusable. Please refund me.", "56.10", 0
             ),

@@ -5,7 +5,7 @@ from functools import cache
 from pathlib import Path
 
 _DIR = Path(__file__).parent
-CURRENT_VERSION = "support_agent_v1"
+CURRENT_VERSION = "support_agent_v2"
 
 
 @dataclass(frozen=True)

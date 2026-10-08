@@ -462,3 +462,47 @@ async def test_checkpointed_state_holds_plain_values_only(harness) -> None:  # t
     # Enum members in the state need a custom deserialiser the checkpointer warns about.
     assert type(run.state_json["actions"][0]["result"]["status"]) is str
     assert type(run.state_json["status"]) is str
+
+
+async def test_an_escalated_ticket_stays_escalated(harness) -> None:  # type: ignore[no-untyped-def]
+    h = await harness(
+        [
+            turn(call("escalate_to_human", reason="Delivered but not received.")),
+            turn(call("update_ticket", status="pending_approval", note="Sent for review.")),
+            DONE,
+        ],
+        OrderSeed("o", "67.00"),
+    )
+
+    run = await h.start()
+
+    ticket = await h.ticket(run)
+    assert ticket.status == TicketStatus.ESCALATED, "only a person takes a ticket back"
+    assert ticket.messages[-2]["text"] == "Sent for review.", "the note is still recorded"
+    assert h.last_tool_result()["status"] == "escalated"
+    assert run.status == RunStatus.ESCALATED
+
+
+async def test_a_ticket_can_only_be_linked_to_the_customers_own_order(harness) -> None:  # type: ignore[no-untyped-def]
+    h = await harness(
+        [],
+        OrderSeed("o", "40.00"),
+        OrderSeed("theirs", "40.00", owner="other"),
+    )
+    theirs = h.seeded.other_order_ids[0]
+    h.llm.extend(
+        [
+            turn(call("update_ticket", status="open", note="Linking.", order_id=theirs)),
+            turn(call("update_ticket", status="open", note="Linking.", order_id="ORD-00000000")),
+            turn(call("update_ticket", status="open", note="Linked.", order_id=h.order_id)),
+            DONE,
+        ]
+    )
+
+    run = await h.start()
+
+    errors = [r["result"].get("error") for r in run.state_json["tool_results"]]
+    assert errors == ["order_not_found", "order_not_found", None]
+    trace = summarize(await load_trace(h.container.session_factory, run.id))
+    assert trace.tool_retries == 0, "a bad order id is a refusal, not an outage to retry"
+    assert (await h.ticket(run)).order_id == h.order_id

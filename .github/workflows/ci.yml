@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: support
+          POSTGRES_PASSWORD: support
+          POSTGRES_DB: support_ops
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U support -d support_ops"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      UV_PYTHON: "3.12"
+      # The tests create and migrate this database themselves.
+      TEST_DATABASE_URL: postgresql+psycopg://support:support@localhost:5434/support_ops_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format
+        run: uv run ruff format --check .
+
+      - name: Type-check
+        run: uv run mypy app evals
+
+      # The model is scripted in tests, so no API key is needed and nothing is spent.
+      - name: Test
+        run: uv run pytest

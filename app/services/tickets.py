@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clock import utcnow
 from app.db.models import Ticket, TicketStatus, new_id
+from app.services import orders
 from app.services.errors import TicketNotFound
 
 MessageRole = Literal["customer", "agent", "note"]
@@ -55,8 +56,16 @@ async def update_ticket(
     note: str,
     order_id: str | None = None,
 ) -> Ticket:
-    """Set the ticket status and add a note. Repeating the same update changes nothing."""
+    """Set the ticket status and add a note. Repeating the same update changes nothing.
+
+    An escalated ticket keeps that status: only a person takes it back. A
+    linked order must be one of the customer's own.
+    """
     ticket = await get_owned_ticket(session, ticket_id, customer_id, for_update=True)
+    if order_id is not None:
+        await orders.get_owned_order(session, order_id, customer_id)
+    if ticket.status == TicketStatus.ESCALATED:
+        status = TicketStatus.ESCALATED
     last = ticket.messages[-1] if ticket.messages else None
     repeated = (
         ticket.status == status

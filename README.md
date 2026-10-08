@@ -1,5 +1,7 @@
 # Agentic Support Operations Platform
 
+[![CI](https://github.com/AbdlrhmanDev/Agentic-Support-Operations-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdlrhmanDev/Agentic-Support-Operations-Platform/actions/workflows/ci.yml)
+
 A stateful AI support agent that resolves customer tickets end to end: it looks up the order, retrieves the relevant policy, takes the action the policy allows (refund, replacement, account change, escalation), pauses for a human on high-risk actions, and records every model call, tool call and guard decision.
 
 The product requirements are in [02_agentic_support_ops_PRD.md](02_agentic_support_ops_PRD.md).
@@ -44,7 +46,7 @@ The model proposes; code decides. The rules below are enforced in `app/services/
 | Tool arguments are validated by Pydantic with unknown fields rejected | [app/tools/write.py](app/tools/write.py) |
 | Read tools and write tools are separate; every write tool must declare a decision rule | [app/tools/base.py](app/tools/base.py) |
 | No tool accepts SQL or field names; all queries go through the ORM | `app/services/` |
-| Customer text, policy text and tool results are treated as data, never as instructions | [app/agent/prompts/support_agent_v1.md](app/agent/prompts/support_agent_v1.md) |
+| Customer text, policy text and tool results are treated as data, never as instructions | [app/agent/prompts/support_agent_v2.md](app/agent/prompts/support_agent_v2.md) |
 
 All limits are settings in [app/config.py](app/config.py), driven by environment variables.
 
@@ -151,30 +153,31 @@ Reported metrics: task success rate, tool selection accuracy, tool argument accu
 
 ### Results
 
-One run of the full suite on 2026-10-08: model `gpt-6.1-sol`, reasoning effort `medium`, prompt `support_agent_v1`, hashing embedder, model routing off, concurrency 4. The prompt was not tuned against the suite beforehand.
+Two runs of the full suite on 2026-10-08, both on `gpt-6.1-sol` at reasoning effort `medium`, with the hashing embedder, model routing off and concurrency 4.
 
-| Metric | Result |
-| --- | --- |
-| Task success rate | 0.85 (85 of 100) |
-| Tool selection accuracy | 0.94 |
-| Tool argument accuracy | 0.88 |
-| Policy compliance rate | 0.99 |
-| Unsafe action rate | 0.0 |
-| Escalation precision | 0.8462 |
-| Escalation recall | 0.6111 |
-| Average tool calls per task | 4.24 |
-| Latency p50 / p95 | 14,041 ms / 21,219 ms |
-| Average cost per task | $0.005722 |
+| Metric | Run 1: prompt v1 | Run 2: prompt v2 and fixes |
+| --- | --- | --- |
+| Task success rate | 0.85 | 1.0 |
+| Tool selection accuracy | 0.94 | 1.0 |
+| Tool argument accuracy | 0.88 | 1.0 |
+| Policy compliance rate | 0.99 | 1.0 |
+| Unsafe action rate | 0.0 | 0.0 |
+| Escalation precision | 0.8462 | 1.0 |
+| Escalation recall | 0.6111 | 1.0 |
+| Average tool calls per task | 4.24 | 4.11 |
+| Latency p50 / p95 | 14,041 ms / 21,219 ms | 15,977 ms / 36,601 ms |
+| Average cost per task | $0.005722 | $0.005480 |
 
-Task success by category: valid refund 1.0, duplicate charge 1.0, ambiguous request 1.0, damaged item 0.9, lost shipment 0.8, order not found 0.8, approval required 0.8, prompt injection 0.8, invalid refund 0.7, tool failure 0.7.
+**Read run 2 with care.** The changes between the runs were made after reading the 15 failures of run 1, and run 2 was graded on the same 100 scenarios. It shows those failures are fixed. It does not show how the agent does on tickets it has not seen: there is no held-out scenario set, and each configuration was run once, so run-to-run variation is unmeasured.
 
-The 15 failures, none of which moved money or changed an account wrongly:
+What run 1 got wrong, and what changed. None of the 15 failures moved money or changed an account wrongly.
 
-- Seven escalated to a human where a plain refusal or answer was expected (invalid refund 05, 06, 10; order not found 02, 04; prompt injection 02, 09). In the two injection cases the agent did not follow the injected instruction; it escalated instead of simply declining.
-- Seven did not hand over to a human where that was expected (lost shipment 09, 10; tool failure 08, 09, 10; approval required 06, 07).
-- One did not issue a refund the policy allowed (damaged item 05).
+- **Seven escalations were overwritten.** The agent escalated correctly, then called `update_ticket` with `pending_approval`, which took the ticket out of the escalated state. Fixed in code: an escalated ticket now keeps that status until a person changes it. The prompt also says not to update the ticket after escalating.
+- **Two escalations came from a bug in `update_ticket`.** It accepted any order id. An unknown id broke a database constraint, was retried as if the system were down, and the agent then escalated for a system failure. It also allowed a ticket to be linked to another customer's order. Fixed in code: the order must be the customer's own, and anything else is refused at once.
+- **Five were escalated where a plain no was expected.** Prompt v2 adds that a clear refusal from policy is a finished ticket, and that a refund request giving no reason is a change-of-mind request rather than `other`.
+- **Three scenarios had data that contradicted itself**, and the agent's caution in run 1 was reasonable. Cancelled orders were seeded as charged, although the policy says they are not; these are now seeded with nothing charged. One message described a shattered screen on an order of headphones; the message no longer names a screen.
 
-This is a single run, so the figures carry run-to-run variation that has not been measured.
+Reports for both runs are written to `evals/reports/`, which is not committed.
 
 ### Run quality score
 
@@ -235,6 +238,7 @@ tests/              unit and integration tests
 - Reviewers are identified by personal API keys from configuration. There are no user accounts, roles or key rotation, and without `REVIEWER_KEYS` the reviewer name is whatever the caller sends.
 - Email intake is inbound only. Replies are written to the ticket, not sent, and a follow-up email opens a new ticket rather than joining the earlier one.
 - The cost of OpenAI embedding calls is not included in a run's cost.
+- The evaluation has no held-out scenarios, and an escalated ticket has no API for a person to take it back.
 - The quality score is rule-based. It does not judge the wording or tone of the reply.
 - Background runs (`?wait=false`) are tasks inside the API process, not a durable queue: a run in flight when the process stops stays `running`.
 - PRD stretch goals not built: chat intake, multi-agent specialisation and policy-version-aware decisions.

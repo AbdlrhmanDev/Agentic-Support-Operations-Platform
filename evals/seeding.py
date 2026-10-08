@@ -43,6 +43,13 @@ def _order_id() -> str:
     return f"ORD-{uuid4().int % 10**8:08d}"
 
 
+def _charged(seed: OrderSeed) -> Decimal:
+    if seed.charged is not None:
+        return Decimal(seed.charged)
+    # Policy: a cancelled order is not charged.
+    return Decimal("0.00") if seed.status == "cancelled" else Decimal(seed.total)
+
+
 def _build_order(seed: OrderSeed, order_id: str, customer_id: str) -> Order:
     now = utcnow()
     delivered_at = (
@@ -62,7 +69,7 @@ def _build_order(seed: OrderSeed, order_id: str, customer_id: str) -> Order:
         customer_id=customer_id,
         item_summary=seed.item,
         total=Decimal(seed.total),
-        charged_amount=Decimal(seed.charged or seed.total),
+        charged_amount=_charged(seed),
         currency="USD",
         status=seed.status,
         placed_at=placed_at,

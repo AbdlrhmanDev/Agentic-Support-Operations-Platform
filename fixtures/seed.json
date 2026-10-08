@@ -12,6 +12,6 @@
     {"id": "ORD-2002", "customer_id": "cus_bob", "item": "Water bottle", "total": "24.50", "charged": "49.00", "status": "delivered", "delivered_days_ago": 3},
     {"id": "ORD-2003", "customer_id": "cus_bob", "item": "Backpack", "total": "72.00", "status": "shipped", "shipped_days_ago": 2},
     {"id": "ORD-3001", "customer_id": "cus_carol", "item": "Laptop", "total": "1499.00", "status": "delivered", "delivered_days_ago": 2},
-    {"id": "ORD-3002", "customer_id": "cus_carol", "item": "USB-C cable", "total": "12.99", "status": "cancelled"}
+    {"id": "ORD-3002", "customer_id": "cus_carol", "item": "USB-C cable", "total": "12.99", "charged": "0.00", "status": "cancelled"}
   ]
 }

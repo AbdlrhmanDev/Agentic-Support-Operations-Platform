@@ -99,7 +99,7 @@ class TestTools:
 class TestAgent:
     def test_prompt_is_versioned_and_carries_the_leak_marker(self) -> None:
         prompt = load_prompt()
-        assert prompt.version == "support_agent_v1"
+        assert prompt.version == "support_agent_v2"
         assert PROMPT_MARKER in prompt.text
 
     def test_customer_message_cannot_close_its_wrapper(self) -> None:

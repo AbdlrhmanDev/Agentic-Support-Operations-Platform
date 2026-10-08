@@ -8,7 +8,7 @@ Agentic Support Operations Platform: a stateful AI agent that resolves customer-
 
 The source of truth for scope is [02_agentic_support_ops_PRD.md](02_agentic_support_ops_PRD.md). Read it before designing a feature. If a request conflicts with the PRD, say so instead of silently picking one.
 
-**Status:** the MVP is implemented and tested with a scripted model, and the eval suite has been run once against `gpt-6.1-sol`; the measured numbers are in the README. See [README.md](README.md) for setup and the known gaps.
+**Status:** the MVP is implemented and tested with a scripted model, and the eval suite has been run against `gpt-6.1-sol` on prompts v1 and v2; the measured numbers, and why the v2 result is in-sample, are in the README. See [README.md](README.md) for setup and the known gaps.
 
 ## Stack
 

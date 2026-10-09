@@ -4,7 +4,16 @@
 
 A stateful AI support agent that resolves customer tickets end to end: it looks up the order, retrieves the relevant policy, takes the action the policy allows (refund, replacement, account change, escalation), pauses for a human on high-risk actions, and records every model call, tool call and guard decision.
 
+![Support Ops console with live run history, status filters, and the approval queue](docs/images/support-ops-console.png)
+
+*The operations console showing local demo runs. Open a run to inspect its full decision trace.*
+
 The product requirements are in [02_agentic_support_ops_PRD.md](02_agentic_support_ops_PRD.md).
+
+**Completion status:** the core MVP is implemented, but not every PRD and repository
+requirement is complete. The [requirements audit](docs/requirements-audit.md) maps
+requirements to code and tests, and lists the remaining safety, recovery and
+observability gaps separately from optional stretch goals.
 
 ## How it works
 
@@ -40,7 +49,7 @@ The model proposes; code decides. The rules below are enforced in `app/services/
 | --- | --- |
 | Refund eligibility, amounts, the automatic limit (100.00) and the hard cap (1000.00) | [app/services/refunds.py](app/services/refunds.py) |
 | A write above a limit needs an approved request that matches the exact run, action and payload | [app/services/authorization.py](app/services/authorization.py) |
-| Every write is idempotent: the key is derived from run, tool and arguments | [app/tools/base.py](app/tools/base.py) |
+| Refund and replacement writes use keys derived from run, tool and arguments; other write paths have narrower duplicate suppression | [app/tools/base.py](app/tools/base.py), [remaining idempotency gaps](docs/requirements-audit.md#remaining-gaps-in-priority-order) |
 | Refunds on one order are serialised by a row lock, so concurrent calls cannot exceed the balance | [app/services/refunds.py](app/services/refunds.py) |
 | A run can only see and act on the orders of the customer who opened the ticket | [app/services/orders.py](app/services/orders.py) |
 | Tool arguments are validated by Pydantic with unknown fields rejected | [app/tools/write.py](app/tools/write.py) |
@@ -75,6 +84,36 @@ docker compose up --build      # migrates, seeds demo data, serves on :8000
 ```
 
 Open <http://localhost:8000> for the console, or <http://localhost:8000/docs> for the API.
+
+### Web console
+
+The console is served by FastAPI at `/`, with local assets at `/static`. No Node.js,
+frontend build, CDN, or additional application dependency is needed.
+
+- **Overview:** live counts from the latest 200 runs and the pending approval queue.
+  These are activity counts, not evaluation success metrics.
+- **Agent runs:** search by run, ticket, customer, outcome or model; filter by status.
+- **New ticket:** enter a known customer's email and message, or fill a seeded example.
+  Starting a run uses the configured model and may incur model charges. The UI follows
+  background progress without blocking the page.
+- **Approvals:** inspect the proposed action, customer/order, exact amount/currency,
+  complete payload and policy citation. Approve or reject with a reviewer note.
+  Missing or unverified policy evidence is explicitly identified.
+- **Trace explorer:** open a run from the history or by ID, inspect its outcome,
+  workflow, model/prompt, usage, cost and expandable events, or download trace JSON.
+  Direct links use `/#trace/RUN_ID`.
+- **Connection settings:** enter the shared API key or your personal reviewer key.
+  Select the personal-key option to let the server identify the reviewer; otherwise
+  provide a reviewer name. Credentials remain in page memory and are not saved in
+  browser storage.
+
+The workspace refreshes every eight seconds while visible, pausing while a dialog
+is open or a data control is focused. A disconnected workspace is labeled as stale.
+The layout supports mobile widths and keyboard navigation. Sensitive decisions are
+still validated by the server; UI controls do not change the business limits.
+
+If Docker was already running when these files changed, rebuild the API with
+`docker compose up -d --build api` to serve the current console.
 
 ### Locally
 
@@ -207,6 +246,11 @@ uv run mypy app evals
 Set `TEST_DATABASE_URL` to use a different server.
 
 The model is replaced by a scripted stand-in, so tests are deterministic and free. They cover the refund rules, idempotency under retries and concurrency, pause and resume for both approve and reject, each guardrail against a model that tries to break it, retry and escalation on tool failure, the HTTP API, reviewer keys, email intake, queue order, model routing, replay, and the eval graders.
+
+The optional [browser regression suite](tests/browser/README.md) checks console
+behavior with HTTP fixtures: duplicate submission guards, reviewer identity, API
+errors, safe text rendering, trace races, downloads and responsive layouts. It
+does not replace the PostgreSQL integration tests and makes no model calls.
 
 ## Observability
 

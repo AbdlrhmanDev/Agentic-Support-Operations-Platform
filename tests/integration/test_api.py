@@ -51,6 +51,17 @@ async def test_health_and_console(api: Api) -> None:
     assert (await api.client.get("/health")).json() == {"status": "ok"}
     console = await api.client.get("/")
     assert console.status_code == 200 and "Support Ops Console" in console.text
+    assert 'src="/static/console.js"' in console.text
+    assert 'href="/static/console.css"' in console.text
+    for path, content_type in (
+        ("/static/console.js", "javascript"),
+        ("/static/console.css", "text/css"),
+    ):
+        asset = await api.client.get(path)
+        assert asset.status_code == 200
+        assert content_type in asset.headers["content-type"]
+    assert (await api.client.get("/static/missing.js")).status_code == 404
+    assert (await api.client.get("/static/%2e%2e/config.py")).status_code == 404
 
 
 async def test_run_pauses_for_approval_and_resumes_over_http(api: Api) -> None:
@@ -180,6 +191,8 @@ async def test_api_key_is_required_when_configured(settings: Settings) -> None:
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             assert (await client.get("/health")).status_code == 200
             assert (await client.get("/")).status_code == 200
+            assert (await client.get("/static/console.js")).status_code == 200
+            assert (await client.get("/static/console.css")).status_code == 200
             assert (await client.get("/agent/runs")).status_code == 401
             assert (await client.get("/approvals", headers={"X-API-Key": "no"})).status_code == 401
             assert (await client.post("/eval/run", json={})).status_code == 401

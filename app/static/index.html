@@ -1,223 +1,422 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Support Ops Console</title>
-<style>
-  :root {
-    --bg: #f6f7f9; --panel: #fff; --line: #dfe3e8; --text: #1c2430; --muted: #5d6b7c;
-    --accent: #1f5fbf; --ok: #1a7f4b; --warn: #a15c00; --bad: #b3261e;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-         background: var(--bg); color: var(--text); }
-  header { padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  header h1 { margin: 0 auto 0 0; font-size: 17px; }
-  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-         gap: 16px; padding: 16px 20px; max-width: 1400px; margin: 0 auto; }
-  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-            padding: 14px 16px; min-width: 0; }
-  section.wide { grid-column: 1 / -1; }
-  h2 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em;
-       color: var(--muted); }
-  label { display: block; margin: 8px 0 3px; font-weight: 600; }
-  input, textarea, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line);
-       border-radius: 6px; font: inherit; }
-  textarea { min-height: 84px; resize: vertical; }
-  button { margin-top: 10px; padding: 7px 14px; border: 1px solid var(--accent);
-       border-radius: 6px; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
-  button.secondary { background: #fff; color: var(--accent); }
-  button.danger { background: #fff; color: var(--bad); border-color: var(--bad); }
-  button:disabled { opacity: .5; cursor: wait; }
-  .card { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-top: 10px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
-          border: 1px solid var(--line); background: var(--bg); }
-  .pill.completed, .pill.approved { color: var(--ok); border-color: var(--ok); }
-  .pill.awaiting_approval, .pill.pending { color: var(--warn); border-color: var(--warn); }
-  .pill.failed, .pill.rejected, .pill.escalated, .pill.urgent { color: var(--bad); border-color: var(--bad); }
-  .pill.high { color: var(--warn); border-color: var(--warn); }
-  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 8px 0 0; }
-  dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
-  .muted { color: var(--muted); }
-  .scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; }
-  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line);
-           vertical-align: top; }
-  td.mono, pre { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
-  pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 520px; }
-  a { color: var(--accent); cursor: pointer; }
-  #error { color: var(--bad); margin-top: 8px; }
-</style>
-</head>
-<body>
-<header class="row">
-  <h1>Support Ops Console</h1>
-  <label for="apikey" style="margin:0">API key</label>
-  <input id="apikey" type="password" autocomplete="off" placeholder="shared key, or your reviewer key" style="width:240px">
-</header>
-<main>
-  <section>
-    <h2>New ticket</h2>
-    <label for="email">Customer email</label>
-    <input id="email" value="alice@example.com">
-    <label for="message">Message</label>
-    <textarea id="message">My order ORD-1001 arrived damaged. Can you refund it?</textarea>
-    <button id="start">Run agent</button>
-    <div id="error" role="alert"></div>
-    <div id="result"></div>
-  </section>
-
-  <section>
-    <h2>Approval queue</h2>
-    <div class="row">
-      <label for="reviewer" style="margin:0">Reviewer</label>
-      <input id="reviewer" value="team-lead" placeholder="empty with a reviewer key" style="width:190px">
-      <button class="secondary" id="refresh" style="margin:0">Refresh</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#176449" />
+    <title>Support Ops Console</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23176449'/%3E%3Cpath d='M12 13h16v10H18l-6 5z' fill='white'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/static/console.css" />
+    <script src="/static/console.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <aside class="sidebar">
+      <a class="brand" href="#overview" aria-label="Support Ops home"
+        ><span class="brand-mark" aria-hidden="true">s<span>o</span></span
+        ><span
+          >support<span class="brand-light">ops</span
+          ><small>OPERATIONS WORKSPACE</small></span
+        ></a
+      >
+      <div class="workspace">
+        <span class="workspace-icon" aria-hidden="true">S</span>
+        <div>Support workspace<small>Agentic operations</small></div>
+        <span class="workspace-dot" aria-hidden="true"></span>
+      </div>
+      <p class="nav-caption">WORKSPACE</p>
+      <nav aria-label="Main navigation">
+        <a href="#overview" data-nav="overview"
+          ><span aria-hidden="true">◫</span>Overview</a
+        >
+        <a href="#runs" data-nav="runs"
+          ><span aria-hidden="true">↗</span>Agent runs</a
+        >
+        <a href="#approvals" data-nav="approvals"
+          ><span aria-hidden="true">✓</span>Approvals<span
+            class="nav-count"
+            id="nav-approval-count"
+            >—</span
+          ></a
+        >
+        <a href="#trace" data-nav="trace"
+          ><span aria-hidden="true">⌘</span>Trace explorer</a
+        >
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-note">
+          <span class="small-spark" aria-hidden="true">✳</span
+          ><strong>Automation with oversight.</strong>
+          <p>Review sensitive actions and follow every decision.</p>
+        </div>
+        <a class="sidebar-link" href="/docs" target="_blank" rel="noopener"
+          >API documentation <span aria-hidden="true">↗</span></a
+        >
+        <button
+          class="connection-button"
+          id="open-connection"
+          aria-label="Connection settings"
+        >
+          <span class="avatar" aria-hidden="true">↔</span
+          ><span
+            >Connection settings<small id="connection-caption"
+              >API key &amp; reviewer identity</small
+            ></span
+          ><span aria-hidden="true">⚙</span>
+        </button>
+      </div>
+    </aside>
+    <div class="shell">
+      <header class="topbar">
+        <div class="breadcrumb">
+          Workspace <span>/</span> <strong id="breadcrumb">Overview</strong>
+        </div>
+        <div class="topbar-actions">
+          <span class="connection-state" id="connection-state" role="status"
+            >Connecting…</span
+          ><button
+            class="button subtle"
+            id="refresh"
+            title="Refresh workspace"
+            aria-label="Refresh"
+          >
+            <span aria-hidden="true">↻</span> <span>Refresh</span>
+          </button>
+        </div>
+      </header>
+      <main id="main" tabindex="-1">
+        <div id="notice" class="notice" role="alert" hidden></div>
+        <div
+          id="announcement"
+          class="sr-only"
+          role="status"
+          aria-live="polite"
+        ></div>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">SUPPORT OPERATIONS</p>
+            <h1 id="page-title">Your operations, in focus.</h1>
+            <p class="subtitle" id="page-description">
+              A clear view of agent activity and the decisions that need you.
+            </p>
+          </div>
+          <button class="button primary" id="new-ticket">
+            <span aria-hidden="true">+</span> New ticket
+          </button>
+        </div>
+        <section
+          class="metrics"
+          id="metrics"
+          aria-label="Recent activity summary"
+        >
+          <article class="metric">
+            <div>
+              Recent runs <span class="metric-icon" aria-hidden="true">↗</span>
+            </div>
+            <strong id="metric-total">—</strong><small>Latest 200 runs</small>
+          </article>
+          <article class="metric">
+            <div>
+              Completed
+              <span class="metric-icon green" aria-hidden="true">✓</span>
+            </div>
+            <strong id="metric-completed">—</strong
+            ><small>In the loaded run history</small>
+          </article>
+          <article class="metric">
+            <div>
+              Awaiting review
+              <span class="metric-icon amber" aria-hidden="true">◷</span>
+            </div>
+            <strong id="metric-pending">—</strong
+            ><small>Pending queue · up to 500 requests</small>
+          </article>
+          <article class="metric">
+            <div>
+              Needs attention
+              <span class="metric-icon" aria-hidden="true">!</span>
+            </div>
+            <strong id="metric-attention">—</strong
+            ><small>Escalated or failed recent runs</small>
+          </article>
+        </section>
+        <div class="workspace-grid" id="workspace-grid">
+          <section
+            class="panel runs-panel"
+            id="runs-panel"
+            aria-labelledby="runs-title"
+          >
+            <div class="panel-heading">
+              <div>
+                <h2 id="runs-title">
+                  Agent runs <span class="count" id="run-count">—</span>
+                </h2>
+                <p>From customer request to resolution.</p>
+              </div>
+              <span class="live-label"
+                ><span aria-hidden="true"></span>Auto-refresh · 8s</span
+              >
+            </div>
+            <div class="filters">
+              <label class="search-field"
+                ><span aria-hidden="true">⌕</span
+                ><input
+                  type="search"
+                  id="run-search"
+                  placeholder="Search runs, tickets, outcomes…"
+                  aria-label="Search runs" /></label
+              ><label class="sr-only" for="status-filter"
+                >Filter by status</label
+              ><select id="status-filter">
+                <option value="">All statuses</option>
+                <option value="running">Running</option>
+                <option value="completed">Completed</option>
+                <option value="awaiting_approval">Awaiting approval</option>
+                <option value="escalated">Escalated</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <caption class="sr-only">
+                  Recent agent runs. Select a run to view its trace.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Run / ticket</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Outcome</th>
+                    <th scope="col">Model</th>
+                    <th scope="col">Started</th>
+                  </tr>
+                </thead>
+                <tbody id="runs">
+                  <tr>
+                    <td colspan="5" class="table-empty">
+                      Loading run history…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="panel-footer">
+              <span id="runs-caption">Loading recent runs</span
+              ><span>Each action, accounted for.</span>
+            </div>
+          </section>
+          <section
+            class="panel approvals-panel"
+            id="approvals-panel"
+            aria-labelledby="approvals-title"
+          >
+            <div class="panel-heading">
+              <div>
+                <h2 id="approvals-title">
+                  Needs your review
+                  <span class="count amber" id="approval-count">—</span>
+                </h2>
+                <p>Prioritized by urgency and waiting time.</p>
+              </div>
+              <span class="review-symbol" aria-hidden="true">✓</span>
+            </div>
+            <div id="approvals" class="approval-list">
+              <p class="loading">Loading approval queue…</p>
+            </div>
+          </section>
+        </div>
+        <section id="trace-panel" hidden aria-label="Run trace">
+          <div class="panel trace-lookup">
+            <form id="trace-form">
+              <label for="trace-run-id">Open a run</label
+              ><input
+                id="trace-run-id"
+                placeholder="run_…"
+                required
+                maxlength="200"
+                spellcheck="false"
+              /><button class="button secondary" type="submit">
+                Load trace
+              </button>
+            </form>
+            <button class="button subtle" id="download-trace" disabled>
+              ↓ Download JSON
+            </button>
+          </div>
+          <div id="trace-content">
+            <div class="panel empty-state">
+              <span class="empty-icon" aria-hidden="true">⌘</span>
+              <h2>Every decision has a story.</h2>
+              <p>
+                Select a run from the workspace or enter its ID to explore its
+                complete trace.
+              </p>
+            </div>
+          </div>
+        </section>
+        <footer class="page-footer">
+          <span
+            ><span class="footer-dot" aria-hidden="true"></span> Agentic Support
+            Operations Platform</span
+          ><span id="last-updated">Waiting for workspace data</span>
+        </footer>
+      </main>
     </div>
-    <div id="approvals"></div>
-  </section>
-
-  <section class="wide">
-    <h2>Recent runs</h2>
-    <div class="scroll"><table>
-      <thead><tr><th>Run</th><th>Status</th><th>Outcome</th><th>Model</th><th>Started</th></tr></thead>
-      <tbody id="runs"></tbody>
-    </table></div>
-  </section>
-
-  <section class="wide">
-    <h2>Trace <span id="trace-id" class="muted"></span></h2>
-    <div id="trace-summary" class="muted">Select a run to see every model call, tool call and guard decision.</div>
-    <div class="scroll"><table>
-      <thead><tr><th>#</th><th>Kind</th><th>Name</th><th>Input</th><th>Output</th><th>ms</th><th>Tries</th></tr></thead>
-      <tbody id="trace"></tbody>
-    </table></div>
-  </section>
-</main>
-<script>
-const $ = (id) => document.getElementById(id);
-
-// All dynamic text goes through textContent, so data from tickets is never parsed as HTML.
-function el(tag, props = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(props)) {
-    if (key === "class") node.className = value;
-    else if (key === "onclick") node.addEventListener("click", value);
-    else node[key] = value;
-  }
-  for (const child of children) node.append(child);
-  return node;
-}
-const pill = (text) => el("span", { class: `pill ${text}` }, text ?? "-");
-const json = (value) => el("pre", {}, value == null ? "" : JSON.stringify(value, null, 1));
-
-async function api(path, options) {
-  const headers = { "Content-Type": "application/json" };
-  const key = $("apikey").value.trim();
-  if (key) headers["X-API-Key"] = key;
-  const response = await fetch(path, { headers, ...options });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.message || body.detail || response.statusText);
-  return body;
-}
-
-function runCard(run) {
-  return el("div", { class: "card" },
-    el("div", { class: "row" }, pill(run.status), pill(run.outcome),
-       el("a", { onclick: () => showTrace(run.run_id) }, run.run_id)),
-    el("p", {}, run.final_response || run.error || "Waiting for a reviewer."),
-    el("div", { class: "muted" }, "Path: " + run.workflow_path.join(" > ")),
-    el("div", { class: "muted" }, qualityText(run.quality)));
-}
-
-function qualityText(quality) {
-  if (!quality) return "Quality: not scored yet";
-  const failed = Object.entries(quality.checks).filter(([, passed]) => !passed).map(([name]) => name);
-  return `Quality: ${quality.score}` + (failed.length ? ` (failed: ${failed.join(", ")})` : "");
-}
-
-function approvalCard(approval) {
-  const ctx = approval.context || {};
-  const fields = [
-    ["Action", approval.action],
-    ["Reason", approval.reason],
-    ["Proposed", Object.entries(approval.payload).map(([k, v]) => `${k}: ${v}`).join(", ")],
-    ["Customer", ctx.customer ? `${ctx.customer.name} (${ctx.customer.customer_id})` : "-"],
-    ["Order", ctx.order ? `${ctx.order.order_id}, ${ctx.order.item}, ${ctx.order.total} ${ctx.order.currency}, ${ctx.order.status}` : "-"],
-    ["Agent's case", ctx.justification || "-"],
-    ["Policy", approval.policy_citation
-        ? `${approval.policy_citation.title || approval.policy_citation.cited}: ${approval.policy_citation.section || ""}`
-        : "none cited"],
-  ];
-  const list = el("dl");
-  for (const [name, value] of fields) list.append(el("dt", {}, name), el("dd", {}, value));
-  if (approval.policy_citation?.excerpt)
-    list.append(el("dt", {}, ""), el("dd", { class: "muted" }, approval.policy_citation.excerpt));
-  const decide = (verb) => async () => {
-    try {
-      await api(`/approvals/${approval.approval_id}/${verb}`, {
-        // With a reviewer key the server takes the name from the key, so none is sent.
-        method: "POST", body: JSON.stringify($("reviewer").value.trim() ? { reviewer: $("reviewer").value.trim() } : {}),
-      });
-    } catch (error) { $("error").textContent = error.message; }
-    await refresh();
-    await showTrace(approval.run_id);
-  };
-  return el("div", { class: "card" }, pill(approval.priority), list,
-    el("div", { class: "row" },
-       el("button", { onclick: decide("approve") }, "Approve"),
-       el("button", { class: "danger", onclick: decide("reject") }, "Reject"),
-       el("a", { onclick: () => showTrace(approval.run_id) }, "View trace")));
-}
-
-async function refresh() {
-  const [approvals, runs] = await Promise.all([api("/approvals?status=pending"), api("/agent/runs")]);
-  $("approvals").replaceChildren(...(approvals.length
-    ? approvals.map(approvalCard)
-    : [el("p", { class: "muted" }, "Nothing is waiting for approval.")]));
-  $("runs").replaceChildren(...runs.map((run) => el("tr", {},
-    el("td", { class: "mono" }, el("a", { onclick: () => showTrace(run.run_id) }, run.run_id)),
-    el("td", {}, pill(run.status)), el("td", {}, run.outcome || "-"),
-    el("td", {}, run.model), el("td", {}, new Date(run.started_at).toLocaleString()))));
-}
-
-async function showTrace(runId) {
-  const trace = await api(`/traces/${runId}`);
-  const s = trace.summary;
-  $("trace-id").textContent = runId;
-  $("trace-summary").textContent =
-    `${trace.status} | ${trace.model} | prompt ${trace.prompt_version} | ` +
-    `${s.llm_calls} model calls, ${s.tool_calls} tool calls, ${s.tool_retries} retries | ` +
-    `${s.input_tokens} in / ${s.output_tokens} out tokens | ` +
-    `cost ${s.cost_usd == null ? "unknown" : "$" + s.cost_usd} | ${s.latency_ms} ms`;
-  $("trace").replaceChildren(...trace.events.map((event) => el("tr", {},
-    el("td", {}, String(event.seq)), el("td", {}, event.kind), el("td", { class: "mono" }, event.name),
-    el("td", {}, json(event.input)), el("td", {}, json(event.error ? { error: event.error, ...event.output } : event.output)),
-    el("td", {}, event.latency_ms == null ? "" : String(event.latency_ms)),
-    el("td", {}, String(event.attempts)))));
-}
-
-$("start").addEventListener("click", async () => {
-  $("start").disabled = true;
-  $("error").textContent = "";
-  try {
-    const run = await api("/agent/runs", {
-      method: "POST",
-      body: JSON.stringify({ customer_email: $("email").value, message: $("message").value }),
-    });
-    $("result").replaceChildren(runCard(run));
-    await showTrace(run.run_id);
-  } catch (error) {
-    $("error").textContent = error.message;
-  } finally {
-    $("start").disabled = false;
-    await refresh();
-  }
-});
-$("refresh").addEventListener("click", refresh);
-refresh().catch((error) => { $("error").textContent = error.message; });
-</script>
-</body>
+    <dialog id="ticket-dialog" aria-labelledby="ticket-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">START A WORKFLOW</p>
+          <h2 id="ticket-title">Let’s resolve a request.</h2>
+        </div>
+        <button
+          class="icon-button"
+          data-close="ticket-dialog"
+          aria-label="Close new ticket"
+        >
+          ×
+        </button>
+      </div>
+      <form id="ticket-form">
+        <label for="email">Customer email</label
+        ><input
+          id="email"
+          type="email"
+          autocomplete="email"
+          placeholder="alice@example.com"
+          required
+          maxlength="320"
+        />
+        <label for="message">Customer message</label
+        ><textarea
+          id="message"
+          rows="5"
+          placeholder="Include an order number and what the customer needs help with."
+          required
+          maxlength="5000"
+        ></textarea>
+        <div class="field-help">
+          The customer must already exist in the backend.
+        </div>
+        <details class="demo-details">
+          <summary>Try a seeded example</summary>
+          <div class="example-buttons">
+            <button class="button subtle" type="button" data-example="refund">
+              Damaged item</button
+            ><button
+              class="button subtle"
+              type="button"
+              data-example="approval"
+            >
+              High-value refund</button
+            ><button
+              class="button subtle"
+              type="button"
+              data-example="shipping"
+            >
+              Lost shipment
+            </button>
+          </div>
+          <p>
+            Examples use the demo seed data. Starting a run calls the configured
+            model and may change demo orders.
+          </p>
+        </details>
+        <div id="ticket-error" class="form-error" role="alert"></div>
+        <div class="dialog-actions">
+          <button
+            class="button secondary"
+            type="button"
+            data-close="ticket-dialog"
+          >
+            Cancel</button
+          ><button class="button primary" id="start" type="submit">
+            Start agent run ↗
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="connection-dialog" aria-labelledby="connection-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">WORKSPACE ACCESS</p>
+          <h2 id="connection-title">Connection settings</h2>
+        </div>
+        <button
+          class="icon-button"
+          data-close="connection-dialog"
+          aria-label="Close connection settings"
+        >
+          ×
+        </button>
+      </div>
+      <form id="connection-form">
+        <label for="apikey">API key</label
+        ><input
+          id="apikey"
+          type="password"
+          autocomplete="off"
+          placeholder="Shared API key or personal reviewer key"
+        />
+        <p class="field-help">
+          Used only for this page session. Leave blank if the local API is open.
+        </p>
+        <label class="checkbox-label"
+          ><input type="checkbox" id="reviewer-key" /> This is my personal
+          reviewer key</label
+        ><label for="reviewer">Reviewer name</label
+        ><input id="reviewer" placeholder="e.g. team-lead" maxlength="200" />
+        <p class="field-help" id="reviewer-help">
+          Required for approval decisions when personal reviewer keys are not
+          configured.
+        </p>
+        <div class="dialog-actions">
+          <button class="button primary" type="submit">
+            Connect workspace
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="decision-dialog" aria-labelledby="decision-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">HUMAN REVIEW</p>
+          <h2 id="decision-title">Review action</h2>
+        </div>
+        <button
+          class="icon-button"
+          data-close="decision-dialog"
+          aria-label="Close review"
+        >
+          ×
+        </button>
+      </div>
+      <form id="decision-form">
+        <div id="decision-context"></div>
+        <p id="decision-effect" class="field-help"></p>
+        <label for="decision-note"
+          >Decision note <span class="muted">(optional)</span></label
+        ><textarea
+          id="decision-note"
+          rows="3"
+          maxlength="2000"
+          placeholder="Add context for the agent and the audit trail."
+        ></textarea>
+        <p id="decision-identity" class="field-help"></p>
+        <div id="decision-error" class="form-error" role="alert"></div>
+        <div class="dialog-actions">
+          <button
+            class="button secondary"
+            type="button"
+            data-close="decision-dialog"
+          >
+            Cancel</button
+          ><button class="button primary" id="submit-decision" type="submit">
+            Confirm decision
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </body>
 </html>

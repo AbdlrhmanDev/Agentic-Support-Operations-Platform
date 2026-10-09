@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.agent.llm.base import LLMClient
 from app.api import approvals, evals, intake, runs
@@ -37,6 +38,7 @@ def create_app(settings: Settings | None = None, llm: LLMClient | None = None) -
     app.include_router(intake.router, dependencies=protected)
     app.include_router(approvals.router, dependencies=protected)
     app.include_router(evals.router, dependencies=protected)
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.exception_handler(DomainError)
     async def domain_error(_: Request, exc: DomainError) -> JSONResponse:
